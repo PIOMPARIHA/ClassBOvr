@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AGNE Patronage Class B Stock % Override Report</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root {
+      --brand: #b43333;
+      --bg: #f6f7f9;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      background: var(--brand);
+      color: #ffffff;
+      padding: 14px 24px;
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .header img {
+      height: 40px;
+      width: 40px;
+      border-radius: 50%;
+      background: white;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    /* ===== PAGE LAYOUT ===== */
+    .page {
+      min-height: calc(100vh - 68px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: var(--card);
+      border-radius: 16px;
+      padding: 32px 36px;
+      box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.08),
+        0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .card h2 {
+      margin: 0 0 24px;
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    /* ===== FORM ===== */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      font-size: 15px;
+      transition: border 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(180, 51, 51, 0.15);
+    }
+
+    button {
+      width: 100%;
+      padding: 13px;
+      margin-top: 18px;
+      border-radius: 12px;
+      border: none;
+      background: var(--brand);
+      color: white;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: transform 0.05s ease, box-shadow 0.15s ease;
+      box-shadow: 0 6px 16px rgba(180, 51, 51, 0.35);
+    }
+
+    button:hover {
+      box-shadow: 0 8px 18px rgba(180, 51, 51, 0.45);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* ===== ERROR TOAST ===== */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #dc2626;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-weight: 600;
+      display: none;
+      z-index: 9999;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ===== HEADER WITH LOGO ===== -->
+  <header class="header">
+    <div class="header-content">
+      <img src="/image.png" alt="AGNE Logo">
+      <div class="header-title">
+        AGNE Patronage Class B Stock % Override Report
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== MAIN PAGE ===== -->
+  <main class="page">
+    <div class="card">
+      <h2>Enter Details</h2>
+
+      <form id="reportForm" action="/ClassB" method="post" target="downloadFrame">
+
+        <div class="form-group">
+          <label>Class B Override %</label>
+          <input
+            type="number"
+            name="amount"
+            step="0.01"
+            min="0"
+            max="100"
+            placeholder="Example: 10.00"
+          />
+          <div class="hint">Example: 10.00 = 10% (leave blank for all)</div>
+        </div>
+
+        <div class="form-group">
+          <label>Customer Number</label>
+          <input
+            type="text"
+            name="code"
+            maxlength="10"
+            placeholder="Optional"
+          />
+        </div>
+
+        <button type="submit">Generate Report</button>
+      </form>
+    </div>
+  </main>
+
+  <!-- ===== ERROR TOAST ===== -->
+  <div id="errorToast" class="toast"></div>
+
+  <!-- Hidden iframe for download -->
+  <iframe name="downloadFrame" style="display:none"></iframe>
+
+  <!-- ===== SCRIPT ===== -->
+  <script>
+    (function () {
+      const form = document.getElementById('reportForm');
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const errorToast = document.getElementById('errorToast');
+
+      let downloading = false;
+      let hadError = false;
+
+      /* Submit */
+      form.addEventListener('submit', () => {
+        downloading = true;
+        hadError = false;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Generating...';
+      });
+
+      /* Download completed */
+      window.addEventListener('focus', () => {
+        if (!downloading || hadError) return;
+
+        downloading = false;
+
+        /* ✅ Reload page after successful download */
+        setTimeout(() => {
+          window.location.reload();
+        }, 300);
+      });
+
+      /* Error from server */
+      window.addEventListener('message', e => {
+        if (!e.data || e.data.type !== 'DOWNLOAD_ERROR') return;
+
+        hadError = true;
+        downloading = false;
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Generate Report';
+
+        errorToast.innerText = '❌ ' + e.data.message;
+        errorToast.style.display = 'block';
+
+        setTimeout(() => {
+          errorToast.style.display = 'none';
+        }, 3000);
+      });
+    })();
+  </script>
+
+</body>
+</html>
